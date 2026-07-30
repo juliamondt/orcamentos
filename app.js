@@ -7,7 +7,7 @@
   const fields = {
     numero: $('fNumero'), dataEnvio: $('fDataEnvio'), validade: $('fValidade'),
     referencia: $('fReferencia'),
-    pNome: $('pNome'), pDoc: $('pDoc'), pTelefone: $('pTelefone'), pEmail: $('pEmail'), pEndereco: $('pEndereco'),
+    pNome: $('pNome'), pDoc: $('pDoc'), pTelefone: $('pTelefone'), pEmail: $('pEmail'), pEndereco: $('pEndereco'), pPortfolio: $('pPortfolio'),
     cNome: $('cNome'), cDoc: $('cDoc'), cTelefone: $('cTelefone'), cEmail: $('cEmail'),
     desconto: $('fDesconto'), descontoTipo: $('fDescontoTipo'), imposto: $('fImposto'),
     pagamento: $('fPagamento'), observacoes: $('fObservacoes'),
@@ -42,20 +42,21 @@
       fields.pTelefone.value = data.telefone || '';
       fields.pEmail.value = data.email || '';
       fields.pEndereco.value = data.endereco || '';
+      fields.pPortfolio.value = data.portfolio || '';
     } catch (e) { /* ignora dados corrompidos */ }
   }
 
   function savePrestador() {
     const data = {
       nome: fields.pNome.value, doc: fields.pDoc.value, telefone: fields.pTelefone.value,
-      email: fields.pEmail.value, endereco: fields.pEndereco.value,
+      email: fields.pEmail.value, endereco: fields.pEndereco.value, portfolio: fields.pPortfolio.value,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
 
   $('clearPrestador').addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
-    ['pNome', 'pDoc', 'pTelefone', 'pEmail', 'pEndereco'].forEach((k) => (fields[k].value = ''));
+    ['pNome', 'pDoc', 'pTelefone', 'pEmail', 'pEndereco', 'pPortfolio'].forEach((k) => (fields[k].value = ''));
     render();
   });
 
@@ -129,6 +130,38 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // ---------- QR code do portfólio ----------
+  let lastQRUrl = null;
+  function renderPortfolioQR(url) {
+    const wrap = $('pvPortfolioWrap');
+    const container = $('qrcode');
+    if (!url) {
+      wrap.hidden = true;
+      container.innerHTML = '';
+      lastQRUrl = null;
+      return;
+    }
+    wrap.hidden = false;
+    if (url === lastQRUrl) return; // evita regerar a cada tecla digitada em outros campos
+    lastQRUrl = url;
+    container.innerHTML = '';
+    // eslint-disable-next-line no-new
+    new QRCode(container, {
+      text: url, width: 168, height: 168,
+      colorDark: '#1A1A1A', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+    // Substitui o <canvas> por uma <img> com os pixels já "gravados": um <canvas> vazio
+    // é o que se copia ao clonar o nó para gerar o PDF, então precisamos travar a imagem aqui.
+    const canvas = container.querySelector('canvas');
+    if (canvas) {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      container.innerHTML = '';
+      container.appendChild(img);
+    }
+  }
+
   // ---------- Cálculos ----------
   function computeTotals() {
     const subtotal = items.reduce((s, it) => s + (it.qtd || 0) * (it.valor || 0), 0);
@@ -196,6 +229,8 @@
     $('pvObsWrap').hidden = !obs;
     $('pvObservacoes').textContent = obs;
 
+    renderPortfolioQR(fields.pPortfolio.value.trim());
+
     // Resumos da sanfona
     const validadeLabel = dias > 0 ? `${dias} dias` : 'sem validade';
     $('sumDetalhes').textContent = `${fields.numero.value || '001'} · ${validadeLabel}`;
@@ -219,7 +254,7 @@
   // ---------- Eventos ----------
   Object.entries(fields).forEach(([key, el]) => {
     el.addEventListener('input', () => {
-      if (['pNome', 'pDoc', 'pTelefone', 'pEmail', 'pEndereco'].includes(key)) savePrestador();
+      if (['pNome', 'pDoc', 'pTelefone', 'pEmail', 'pEndereco', 'pPortfolio'].includes(key)) savePrestador();
       render();
     });
   });
@@ -267,28 +302,19 @@
       const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      if (imgHeight <= pageHeight) {
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      } else {
-        // divide em múltiplas páginas se o orçamento for longo
-        let remaining = canvas.height;
-        let position = 0;
-        const pageCanvasHeight = (pageHeight * canvas.width) / imgWidth;
-        while (remaining > 0) {
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = Math.min(pageCanvasHeight, remaining);
-          sliceCanvas.getContext('2d').drawImage(canvas, 0, position, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
-          const sliceImg = sliceCanvas.toDataURL('image/png');
-          if (position > 0) pdf.addPage();
-          pdf.addImage(sliceImg, 'PNG', 0, 0, imgWidth, (sliceCanvas.height * imgWidth) / canvas.width);
-          position += sliceCanvas.height;
-          remaining -= sliceCanvas.height;
-        }
+      // Sempre uma página A4 só: se o conteúdo for mais alto que a página,
+      // encolhe proporcionalmente (largura e altura) até caber inteiro.
+      let drawWidth = pageWidth;
+      let drawHeight = (canvas.height * drawWidth) / canvas.width;
+      if (drawHeight > pageHeight) {
+        const fator = pageHeight / drawHeight;
+        drawHeight = pageHeight;
+        drawWidth = drawWidth * fator;
       }
+      const xOffset = (pageWidth - drawWidth) / 2;
+      const yOffset = (pageHeight - drawHeight) / 2;
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, drawWidth, drawHeight);
 
       const hoje = new Date();
       const dd = String(hoje.getDate()).padStart(2, '0');
