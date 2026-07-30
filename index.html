@@ -9,11 +9,6 @@
 </head>
 <body>
 
-<header class="topbar">
-  <div class="topbar__brand">Gerador de <em>Orçamento</em></div>
-  <button id="exportBtn" class="btn btn--primary">Exportar PDF</button>
-</header>
-
 <main class="layout">
 
   <!-- ===================== FORM (EDIT) ===================== -->
@@ -74,6 +69,11 @@
           </div>
           <div class="field"><label>E-mail</label><input type="email" id="pEmail"></div>
           <div class="field"><label>Endereço <span class="opt">(opcional)</span></label><input type="text" id="pEndereco"></div>
+          <div class="field">
+            <label>Link do portfólio <span class="opt">(opcional)</span></label>
+            <input type="url" id="pPortfolio" placeholder="https://...">
+            <p class="hint" style="margin-top:2px;">Se preenchido, um QR code aparece no orçamento.</p>
+          </div>
         </div>
       </div>
 
@@ -206,13 +206,24 @@
         <div id="pvObsWrap" hidden><div class="paper__label">Observações</div><p id="pvObservacoes"></p></div>
       </div>
 
+      <div class="paper__portfolio" id="pvPortfolioWrap" hidden>
+        <div class="paper__label">Portfólio</div>
+        <div class="paper__qr" id="qrcode"></div>
+      </div>
+
     </div>
   </section>
 
 </main>
 
+<div class="page-footer">
+  <p class="footer-signature">feito por <span>@juliamondt</span></p>
+  <button id="exportBtn" class="btn-block" type="button">Exportar PDF</button>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
