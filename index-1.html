@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gerador de Orçamento</title>
+<meta name="description" content="Crie orçamentos profissionais em segundos. Grátis, sem cadastro — tudo fica no seu dispositivo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__brand">Gerador de <em>Orçamento</em></div>
+  <button id="exportBtn" class="btn btn--primary">Exportar PDF</button>
+</header>
+
+<main class="layout">
+
+  <!-- ===================== FORM (EDIT) ===================== -->
+  <section class="pane pane--edit" id="paneEdit">
+
+    <div class="edit-header">
+      <h1>Novo orçamento</h1>
+      <button id="toggleViewBtn" class="btn btn--dark" type="button">Visualizar</button>
+    </div>
+
+    <div class="accordion">
+
+      <!-- Detalhes -->
+      <div class="acc-item is-open" data-acc="detalhes">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Detalhes</span>
+          <span class="acc-right"><span class="acc-summary" id="sumDetalhes">001 · 15 dias</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <div class="field-row field-row--top">
+            <div class="field">
+              <label>Número</label>
+              <input type="text" id="fNumero" value="001">
+            </div>
+            <div class="field">
+              <label>Data de envio</label>
+              <input type="date" id="fDataEnvio">
+            </div>
+          </div>
+          <div class="field">
+            <label>Validade</label>
+            <select id="fValidade">
+              <option value="7">7 dias</option>
+              <option value="15" selected>15 dias</option>
+              <option value="30">30 dias</option>
+              <option value="0">Sem validade definida</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Referência <span class="opt">(opcional)</span></label>
+            <input type="text" id="fReferencia" placeholder="Ex: Projeto site institucional">
+          </div>
+        </div>
+      </div>
+
+      <!-- Prestador -->
+      <div class="acc-item" data-acc="prestador">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Prestador</span>
+          <span class="acc-right"><span class="acc-summary" id="sumPrestador">Nenhum</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <p class="hint">Salvo automaticamente neste dispositivo — preencha uma vez e ele lembra da próxima. <button class="link-btn" id="clearPrestador" type="button">Limpar dados salvos</button></p>
+          <div class="field"><label>Nome / Razão social</label><input type="text" id="pNome" placeholder="Seu nome ou nome do negócio"></div>
+          <div class="field-row">
+            <div class="field"><label>CPF / CNPJ <span class="opt">(opcional)</span></label><input type="text" id="pDoc"></div>
+            <div class="field"><label>Telefone</label><input type="text" id="pTelefone" placeholder="(00) 00000-0000"></div>
+          </div>
+          <div class="field"><label>E-mail</label><input type="email" id="pEmail"></div>
+          <div class="field"><label>Endereço <span class="opt">(opcional)</span></label><input type="text" id="pEndereco"></div>
+        </div>
+      </div>
+
+      <!-- Cliente -->
+      <div class="acc-item" data-acc="cliente">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Cliente</span>
+          <span class="acc-right"><span class="acc-summary" id="sumCliente">Nenhum</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <div class="field"><label>Nome do cliente</label><input type="text" id="cNome" placeholder="Nome do cliente"></div>
+          <div class="field-row">
+            <div class="field"><label>CPF / CNPJ <span class="opt">(opcional)</span></label><input type="text" id="cDoc"></div>
+            <div class="field"><label>Telefone <span class="opt">(opcional)</span></label><input type="text" id="cTelefone"></div>
+          </div>
+          <div class="field"><label>E-mail <span class="opt">(opcional)</span></label><input type="email" id="cEmail"></div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="acc-item" data-acc="itens">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Itens</span>
+          <span class="acc-right"><span class="acc-summary" id="sumItens">Nenhum</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <div id="itemsList" class="items-list"></div>
+          <button class="link-btn" id="addItem" type="button">+ Adicionar item</button>
+
+          <div class="field-row acc-subrow">
+            <div class="field">
+              <label>Desconto</label>
+              <div class="input-suffix">
+                <input type="number" id="fDesconto" value="0" min="0" step="0.01">
+                <select id="fDescontoTipo">
+                  <option value="valor">R$</option>
+                  <option value="percentual">%</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Imposto <span class="opt">(opcional)</span></label>
+              <div class="input-suffix">
+                <input type="number" id="fImposto" value="0" min="0" step="0.01">
+                <span class="suffix">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagamento -->
+      <div class="acc-item" data-acc="pagamento">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Pagamento</span>
+          <span class="acc-right"><span class="acc-summary" id="sumPagamento">Nenhum</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <div class="field">
+            <label>Forma de pagamento</label>
+            <textarea id="fPagamento" rows="2" placeholder="Ex: Pix, 50% na aprovação e 50% na entrega"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div class="acc-item" data-acc="observacoes">
+        <button class="acc-header" type="button">
+          <span class="acc-title">Observações</span>
+          <span class="acc-right"><span class="acc-summary" id="sumObservacoes">Nenhuma</span><span class="acc-icon">+</span></span>
+        </button>
+        <div class="acc-body">
+          <div class="field">
+            <textarea id="fObservacoes" rows="3" placeholder="Alguma informação extra para o cliente"></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== PREVIEW ===================== -->
+  <section class="pane pane--preview" id="panePreview">
+    <button id="editBtn" class="btn btn--dark pane--preview__editBtn" type="button">Editar</button>
+    <div class="paper" id="paper">
+      <div class="paper__head">
+        <div>
+          <div class="paper__kicker">Orçamento</div>
+          <div class="paper__number" id="pvNumero">001</div>
+        </div>
+        <div class="paper__meta">
+          <div><span>Enviado</span><strong id="pvDataEnvio">—</strong></div>
+          <div><span>Válido até</span><strong id="pvValidade">—</strong></div>
+        </div>
+      </div>
+
+      <div class="paper__ref" id="pvRefWrap" hidden><span>Referência</span><strong id="pvRef"></strong></div>
+
+      <div class="paper__parties">
+        <div>
+          <div class="paper__label">De</div>
+          <div class="paper__party" id="pvPrestador">
+            <strong id="pvPrestadorNome">—</strong>
+          </div>
+        </div>
+        <div>
+          <div class="paper__label">Para</div>
+          <div class="paper__party" id="pvCliente">
+            <strong id="pvClienteNome">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <table class="paper__table">
+        <thead>
+          <tr><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor unit.</th><th class="num">Total</th></tr>
+        </thead>
+        <tbody id="pvItemsBody"></tbody>
+      </table>
+
+      <div class="paper__totals">
+        <div><span>Subtotal</span><strong id="pvSubtotal">R$ 0,00</strong></div>
+        <div id="pvDescontoRow" hidden><span>Desconto</span><strong id="pvDesconto">R$ 0,00</strong></div>
+        <div id="pvImpostoRow" hidden><span>Imposto</span><strong id="pvImposto">R$ 0,00</strong></div>
+        <div class="paper__total-due"><span>Total do orçamento</span><strong id="pvTotal">R$ 0,00</strong></div>
+      </div>
+
+      <div class="paper__foot">
+        <div id="pvPagamentoWrap" hidden><div class="paper__label">Pagamento</div><p id="pvPagamento"></p></div>
+        <div id="pvObsWrap" hidden><div class="paper__label">Observações</div><p id="pvObservacoes"></p></div>
+      </div>
+
+      <div class="paper__signature">feito com o Gerador de Orçamento</div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
