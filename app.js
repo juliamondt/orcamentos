@@ -209,7 +209,6 @@
     $('pvRefWrap').hidden = !ref;
     $('pvRef').textContent = ref;
 
-    $('pvPrestadorNome').textContent = fields.pNome.value.trim() || 'Seu nome';
     const prestadorExtra = [fields.pDoc.value, fields.pTelefone.value, fields.pEmail.value, fields.pEndereco.value]
       .filter(Boolean).map(escapeHtml).join('<br>');
     $('pvPrestador').innerHTML = `<strong>${escapeHtml(fields.pNome.value.trim() || 'Seu nome')}</strong>${prestadorExtra ? '<br>' + prestadorExtra : ''}`;
