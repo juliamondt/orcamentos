@@ -20,6 +20,21 @@
   // ---------- Helpers ----------
   const brl = (n) => (isFinite(n) ? n : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  // Aceita tanto "999.00" quanto "999,00" (caso o valor venha com vírgula, ex: colado de outro lugar),
+  // sem corromper o formato padrão (com ponto) que os campos numéricos já usam.
+  const parseNumber = (val) => {
+    if (typeof val === 'number') return isFinite(val) ? val : 0;
+    if (!val) return 0;
+    let s = String(val).trim();
+    if (s.includes(',') && !s.includes('.')) {
+      s = s.replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+  };
+
   const parseDateLocal = (isoStr) => {
     if (!isoStr) return null;
     const [y, m, d] = isoStr.split('-').map(Number);
@@ -99,7 +114,7 @@
         const idx = Number(e.target.dataset.idx);
         const field = e.target.dataset.field;
         let val = e.target.value;
-        if (field === 'qtd' || field === 'valor') val = parseFloat(val) || 0;
+        if (field === 'qtd' || field === 'valor') val = parseNumber(val);
         items[idx][field] = val;
         render(true);
       });
@@ -165,10 +180,10 @@
   // ---------- Cálculos ----------
   function computeTotals() {
     const subtotal = items.reduce((s, it) => s + (it.qtd || 0) * (it.valor || 0), 0);
-    let desconto = parseFloat(fields.desconto.value) || 0;
+    let desconto = parseNumber(fields.desconto.value);
     if (fields.descontoTipo.value === 'percentual') desconto = subtotal * (desconto / 100);
     const baseImposto = Math.max(subtotal - desconto, 0);
-    const impostoPct = parseFloat(fields.imposto.value) || 0;
+    const impostoPct = parseNumber(fields.imposto.value);
     const imposto = baseImposto * (impostoPct / 100);
     const total = baseImposto + imposto;
     return { subtotal, desconto, imposto, total, impostoPct };
@@ -285,8 +300,17 @@
     // A prévia pode estar com display:none (ex: você está na aba "Editar" no celular).
     // html2canvas não consegue capturar um elemento oculto, então clonamos o conteúdo
     // para fora da tela (visível para o navegador, invisível para você) antes de gerar o PDF.
+    // Também removemos a sombra/cantos arredondados (são só um efeito visual da prévia em tela;
+    // no PDF, o orçamento deve preencher a página como uma folha normal, sem parecer um cartão flutuando).
     const original_paper = $('paper');
     const clone = original_paper.cloneNode(true);
+    clone.style.boxShadow = 'none';
+    clone.style.borderRadius = '0';
+    clone.style.width = '760px';
+    clone.style.maxWidth = 'none';
+    clone.style.margin = '0';
+    clone.style.padding = '64px 56px 56px';
+
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';
     wrapper.style.top = '0';
@@ -303,8 +327,8 @@
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Sempre uma página A4 só: se o conteúdo for mais alto que a página,
-      // encolhe proporcionalmente (largura e altura) até caber inteiro.
+      // Sempre uma página A4 só, alinhada ao topo (como uma folha normal).
+      // Só encolhe (largura e altura, proporcionalmente) se o conteúdo não couber de jeito nenhum.
       let drawWidth = pageWidth;
       let drawHeight = (canvas.height * drawWidth) / canvas.width;
       if (drawHeight > pageHeight) {
@@ -313,8 +337,7 @@
         drawWidth = drawWidth * fator;
       }
       const xOffset = (pageWidth - drawWidth) / 2;
-      const yOffset = (pageHeight - drawHeight) / 2;
-      pdf.addImage(imgData, 'PNG', xOffset, yOffset, drawWidth, drawHeight);
+      pdf.addImage(imgData, 'PNG', xOffset, 0, drawWidth, drawHeight);
 
       const hoje = new Date();
       const dd = String(hoje.getDate()).padStart(2, '0');
